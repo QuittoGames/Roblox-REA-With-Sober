@@ -1,0 +1,21 @@
+{
+  "id": "001",
+  "date": "2026-10-23T17:10:00Z",
+  "type": { "area": "graphics-compatibility" },
+  "title": "Regeneração do pipeline cache Vulkan do Sober",
+  "status": "EXECUTED",
+  "decision_by": "DEV (Quitto) — autorização explícita via question tool",
+  "context": "Cross-check do rea-gfx confirmou mismatch entre pipelineCacheUUID do cache RPCV (d96a0b113cd5ea81013a7becdfd911aa) e o device Intel HD 520 atual (2a4ae900fc21eea083ff35633036f583). O cache, gerado em 2026-06-24 sob driver Mesa 26.0.x, era rejeitado ('validation failed') em toda sessão, forçando recompilação de ~1079 shaders por boot.",
+  "options_considered": [
+    "Manter o cache inválido (sem mudança)",
+    "Renomear para backup e deixar o Sober regenerar (reversível)",
+    "Deletar permanentemente"
+  ],
+  "chosen": "Renomear shadercachevk.bin -> shadercachevk.invalid-20261023-170947.bak",
+  "consequences": [
+    "Próxima sessão recompila shaders uma última vez e grava cache novo com UUID do driver 26.2.x",
+    "Sessões subsequentes devem reutilizar o cache (sem 'Skipping pipeline cache' no log)",
+    "Backup do cache antigo mantido em ~/.var/app/org.vinegarhq.Sober/cache/sober/ para auditoria"
+  ],
+  "validation_plan": "Nova sessão de jogo deve logar pipeline cache sem skip; verificar via rea-gfx doctor (after_log.pipeline_cache_skipped=false ou pipeline_cache_bytes ausente de skip) e inspeção do novo arquivo RPCV"
+}

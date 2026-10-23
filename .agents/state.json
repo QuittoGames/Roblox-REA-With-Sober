@@ -1,0 +1,45 @@
+{
+  "updated_at": "2026-10-23T17:12:00Z",
+  "mode": "BUILD",
+  "collaboration_policy": "PAIR",
+  "objective": "Implementar solução viável de compatibilidade gráfica para Roblox via Sober (cliente Android sobre Vulkan/Mesa), com tooling Rust próprio (rea-gfx) para diagnóstico, profiles de present-mode e validação objetiva.",
+  "task": {
+    "id": "gfx-compat",
+    "name": "Compatibilidade gráfica Sober/Roblox",
+    "phase": "CACHE-REGENERATION-EXECUTED",
+    "description": "Tooling de diagnóstico funcional; próximo: teste de run com profile + captura de after_log"
+  },
+  "operational_context": "Vertical slice #1 concluído: sessão real de jogo observada via verify --profile baseline. Fatos: Intel HD 520 selecionada, API 1.4.354/driver 26.2.5, swapchain 4 imgs/FIFO/format 44/1366x690, 2991 shaders carregados, 1079 compilados em runtime (529ms), pipeline cache 274KB PULADO por validation failed. Causa raiz CONFIRMADA por probe: pipelineCacheUUID do cache (d96a0b11...) difere do device atual (2a4ae900...) — cache gerado por driver Mesa antigo (26.0.x), rejeitado em toda sessão. Tooling corrigido: offset UUID no cache.rs (16..32), parser do formato atual do log (logs.rs), verify lê stderr, pipeline_cache_uuid no probe. 17/17 testes, clippy 0 warnings. Documentado em docs/rea/graphics-compat.md §8-10.",
+  "human_scope": [
+    "Decisão final sobre qual profile de present-mode adotar como default",
+    "Autorização de execução do Sober em modo interativo (abre janela no desktop)"
+  ],
+  "ai_scope": [
+    "Manutenção do tooling rea-gfx (src/*.rs)",
+    "Persistência de estado em .agents/ e docs em docs/rea/",
+    "Execução de testes de diagnóstico (doctor, run com timeout, parser de logs)"
+  ],
+  "shared_scope": [
+    "Validação de resultados com logs reais do Sober"
+  ],
+  "active_proposals": [
+    "Validar a regeneração: nova sessão de jogo deve logar pipeline cache SEM skip; conferir novo RPCV com UUID do driver atual via rea-gfx cache",
+    "Após validação: avaliar profile de present-mode (mailbox) para latência de input vs FIFO"
+  ],
+  "open_questions": [
+    "queue_families[0].present=false no probe Xlib dummy window — unwrap_or(false) ainda esconde erro; corrigir para distinguir",
+    "Regeneração do cache: DEV ainda não decidiu (deletar vs renomear shadercachevk.bin)"
+  ],
+  "blockers": [],
+  "validation": {
+    "cargo_fmt_check": "PASS",
+    "cargo_check": "PASS",
+    "cargo_test": "PASS (17/17)",
+    "cargo_clippy": "PASS (0 warnings)",
+    "doctor_json_runtime": "PASS (exit 0; cross-check UUID ativo)",
+    "vertical_slice_1": "CONCLUÍDO — sessão real observada, fatos extraídas, causa raiz do cache skip confirmada (uuid mismatch)",
+    "parser": "PASS — latest_log da sessão real 100% extraído (20/20 campos)"
+  },
+  "next_step": "Validação da regeneração: rodar nova sessão (rea-gfx run --profile baseline ou Sober normal), conferir que 'Skipping pipeline cache' desaparece do log e que um shadercachevk.bin novo nasce com UUID 2a4ae900...",
+  "summary": "DECISÃO 001 executada: cache RPCV inválido (jun-2026, driver 26.0.x) renomeado para .bak em 2026-10-23. Aguardando validação em sessão nova. Tooling 17/17 testes; docs atualizadas (docs/rea/graphics-compat.md §8-10)."
+}

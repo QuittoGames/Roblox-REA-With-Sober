@@ -1,0 +1,52 @@
+{
+  "name": "codebase report",
+  "updated_at": "2026-10-23T18:10:00Z",
+  "git": { "branch": "main", "commit": "uncommitted-init" },
+  "description": "REA - tooling Rust de diagnostico e validacao do caminho grafico do Roblox via Sober (cliente Android sobre camada de compatibilidade Vulkan/Mesa, Flatpak org.vinegarhq.Sober). Abordagem estritamente nao-invasiva: somente leitura do estado do Sober e configuracao via variaveis de ambiente publicas do Mesa; nenhum binario do Sober/Roblox e modificado, nenhum anti-cheat e tocado.",
+  "language": [
+    { "name": "Rust (edition 2021)", "type": "FACT", "confidence": "HIGH", "evidence": ["Cargo.toml", "src/"] }
+  ],
+  "entrypoints": [
+    { "name": "rea-gfx CLI (src/main.rs)", "type": "FACT", "confidence": "HIGH", "evidence": ["src/main.rs"] }
+  ],
+  "modules": [
+    { "module": "host", "path": "src/host.rs", "responsibility": "Inventario do host: OS, kernel, sessao, CPU flags, GPUs via sysfs, Mesa, loader Vulkan", "type": "FACT", "confidence": "HIGH", "evidence": ["src/host.rs"] },
+    { "module": "sober", "path": "src/sober.rs", "responsibility": "Descoberta da instalacao Flatpak do Sober (paths, commit, runtime, logs, APKs)", "type": "FACT", "confidence": "HIGH", "evidence": ["src/sober.rs"] },
+    { "module": "config", "path": "src/config.rs", "responsibility": "Parser do config.json do Sober (suporta comentarios //)", "type": "FACT", "confidence": "HIGH", "evidence": ["src/config.rs"] },
+    { "module": "logs", "path": "src/logs.rs", "responsibility": "Parser do log do Sober para fatos Vulkan estruturadas (device, swapchain, shaders, cache). Suporta formato atual e legado", "type": "FACT", "confidence": "HIGH", "evidence": ["src/logs.rs"] },
+    { "module": "cache", "path": "src/cache.rs", "responsibility": "Inspecao do container RPCV + header VkPipelineCacheHeaderVersionOne (UUID em offset 16..32)", "type": "FACT", "confidence": "HIGH", "evidence": ["src/cache.rs"] },
+    { "module": "profile", "path": "src/profile.rs", "responsibility": "Profiles de present-mode mapeados para env vars publicas do Mesa (MESA_VK_WSI_PRESENT_MODE)", "type": "FACT", "confidence": "HIGH", "evidence": ["src/profile.rs"] },
+    { "module": "run", "path": "src/run.rs", "responsibility": "Launcher flatpak com env por profile, captura stdout/stderr", "type": "FACT", "confidence": "HIGH", "evidence": ["src/run.rs"] },
+    { "module": "vulkan", "path": "src/vulkan.rs", "responsibility": "Sonda Vulkan/WSI independente (ash 0.38, surface Xlib/XWayland, pipelineCacheUUID por device)", "type": "FACT", "confidence": "HIGH", "evidence": ["src/vulkan.rs"] },
+    { "module": "doctor", "path": "src/doctor.rs", "responsibility": "Consolida host+sober+config+log+cache+probe em relatorio com checks/findings; cross-check UUID cache<->device; verify executa sessao com profile e valida after_log", "type": "FACT", "confidence": "HIGH", "evidence": ["src/doctor.rs"] }
+  ],
+  "flows": [
+    { "name": "doctor", "steps": ["rea-gfx doctor", "host::collect", "sober::collect", "config::read", "SoberLog::read(latest.log)", "cache::inspect(RPCV)", "vulkan::probe(ash)", "checks + findings (cross-check UUID)", "JSON/stdout"], "type": "FACT", "confidence": "HIGH", "evidence": ["src/doctor.rs"] },
+    { "name": "verify", "steps": ["rea-gfx verify --profile P", "doctor::collect (baseline)", "run::launch(flatpak + env)", "espera saida do Sober", "SoberLog::read(stderr se stdout vazio)", "verify_checks/findings", "artifacts/reports/verify-*.json"], "type": "FACT", "confidence": "HIGH", "evidence": ["src/doctor.rs", "src/run.rs"] },
+    { "name": "cache-regeneration", "steps": ["cross-check UUID detecta mismatch", "DEV autoriza (decision_001)", "renomeia shadercachevk.bin -> .bak", "proxima sessao grava cache novo com UUID do driver atual", "log confirma 'Loaded pipeline cache' sem skip"], "type": "FACT", "confidence": "HIGH", "evidence": [".agents/decisions/decision_001.json", "docs/rea/graphics-compat.md"] }
+  ],
+  "dependencies": [
+    { "name": "ash 0.38", "type": "FACT", "confidence": "HIGH", "evidence": ["Cargo.toml"] },
+    { "name": "clap 4 (derive)", "type": "FACT", "confidence": "HIGH", "evidence": ["Cargo.toml"] },
+    { "name": "serde/serde_json", "type": "FACT", "confidence": "HIGH", "evidence": ["Cargo.toml"] },
+    { "name": "flatpak (org.vinegarhq.Sober, runtime org.gnome.Platform 51)", "type": "FACT", "confidence": "HIGH", "evidence": [".agents/state.json"] },
+    { "name": "MangoHud layer (org.freedesktop.Platform.VulkanLayer.MangoHud//26.08) para overlay em sessoes do DEV", "type": "FACT", "confidence": "HIGH", "evidence": [".agents/state.json"] }
+  ],
+  "tests": { "framework": "cargo test (unitarios inline por modulo + teste de parse CLI)", "count": 18, "status": "PASS 18/18", "type": "FACT", "confidence": "HIGH", "evidence": ["src/*.rs (mod tests)", "src/main.rs"] },
+  "documentation": {
+    "docs/rea/graphics-compat.md": "Relatorio tecnico formal: baseline do host, arquitetura, validacoes, vertical slice #1 (sessao real), causa raiz do cache skip (UUID mismatch), feedback do DEV verbatim",
+    ".agents/decisions/decision_001.json": "Decisao 001: regeneracao do pipeline cache (renome para .bak), autorizada pelo DEV",
+    ".agents/state.json": "Estado operacional atual",
+    "conflicts": "nenhum conflito code<->docs conhecido"
+  },
+  "state": {
+    "findings": [
+      { "id": "pipeline-cache-uuid-mismatch", "statement": "Cache RPCV de 2026-06-24 (driver Mesa 26.0.x) era rejeitado por UUID mismatch em toda sessao; regenerado em 2026-10-23 com validacao positiva (Loaded/Saved no log)", "type": "FACT", "confidence": "HIGH", "evidence": ["docs/rea/graphics-compat.md#9", ".agents/decisions/decision_001.json"] },
+      { "id": "graphics-quality-architectural", "statement": "Qualidade visual e a do pack vulkan_mobile do cliente Android (por design do Sober); igualdade com o client Windows nao e atingivel sem bypass de anti-cheat (fora de escopo, bloqueio intencional da Roblox)", "type": "FACT", "confidence": "HIGH", "evidence": ["docs/rea/graphics-compat.md"] },
+      { "id": "probe-present-unwrap", "statement": "get_physical_device_surface_support usa unwrap_or(false) escondendo erro; correcao pendente", "type": "PROPOSAL", "confidence": "HIGH", "evidence": ["src/vulkan.rs"] },
+      { "id": "hardware-ceiling", "statement": "Host i5-6200U + HD 520 (SKL GT2): CPU 96% observada em gameplay com MangoHud; FPS 16-24 e teto de hardware, nao de configuracao", "type": "INFERENCE", "confidence": "MEDIUM", "evidence": ["docs/rea/graphics-compat.md#8"] }
+    ],
+    "profiles": ["baseline", "fifo", "relaxed", "mailbox", "immediate", "llvmpipe"],
+    "validation": "cargo fmt/check/test(18)/clippy PASS; doctor --json exit 0; verify com sessao real"
+  }
+}
