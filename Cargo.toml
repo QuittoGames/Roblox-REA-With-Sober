@@ -1,0 +1,26 @@
+[package]
+name = "rea-gfx"
+version = "0.1.0"
+edition = "2021"
+description = "Roblox-on-Linux graphics path diagnostics and compatibility launcher"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+name = "hardness_gfx"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rea-gfx"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+ash = "0.38"
+clap = { version = "4", features = ["derive"] }
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"

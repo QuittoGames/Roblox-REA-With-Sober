@@ -1,0 +1,19 @@
+# Rust build artifacts
+target/
+
+# Runtime captures (session logs may contain account/gameplay data)
+artifacts/
+
+# Third-party installer binary (not part of this tooling)
+RobloxPlayerInstaller.exe
+
+# Environment files (never commit)
+.env
+.env.*
+*.env
+
+# OS junk
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
